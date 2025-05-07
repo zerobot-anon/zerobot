@@ -1,21 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Coming Soon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <title>ZeroBot</title>
+  <!-- Import model-viewer for interactive 3D -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      font-family: sans-serif;
-      background-color: #f4f4f4;
+    html { scroll-behavior: smooth; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; line-height: 1.6; color: #333; }
+    header { background: #fff; color: #333; text-align: center; padding: 2rem 1rem; }
+    header h1 { margin: 0 0 0.25rem; font-size: 3.5rem; font-weight: normal; }
+    header h2 { margin: 0.25rem 0 0.5rem; font-size: 2.5rem; font-weight: normal; }
+    header h3 { margin: 0 0 0.75rem 0; font-size: 1.5rem; font-weight: normal; font-style: italic; }
+    .btn { background: #333; color: #fff; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem;
+           text-decoration: none; font-size: 1rem; display: inline-block; margin: 0.5rem 0.25rem; }
+    .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    section + section { margin-top: 2rem; }
+    .figure { display: block; max-width: 100%; height: auto; margin: 1rem auto; }
+    .viewer-grid { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 1rem; }
+    model-viewer { width: 250px; height: 250px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 0.5rem; }
+    /* Video Section Styling */
+    #videos {
+      text-align: center;
+      margin: 2rem auto;
+      padding: 0;
+    }
+    .video-grid {
+      width: 60%;
+      display: grid;
+      margin: 1rem auto 0;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+    .video-grid video {
+      text-align: center;
+      width: 100%;
+      height: auto;
+      border-radius: 0.25rem;
     }
   </style>
 </head>
 <body>
-  <h1>Coming Soon</h1>
+  <header>
+    <h1>ZeroBot</h1>
+    <h2>Learning to Manipulate from Scratch with Generative Real2Sim</h2>
+    <h3>Anonymous CoRL Submission</h3>
+    <a href="#generated-meshes" class="btn">👆 Interactive 3D Meshes</a>
+    <a href="#videos" class="btn">🤖 Robot Videos</a>
+  </header>
+
+  <div class="container">
+    <section id="overview">
+      <img src="assets/teaser.png" alt="Overview figure" class="figure">
+    </section>
+
+    <section id="key-idea">
+      <h2 style="text-align: center;">Key Idea</h2>
+      <p>Given a single view of an object, ZeroBot uses an image-to-3D model to generate a mesh and rapidly learns to manipulate it in simulation, without human demonstrations or policy pre-training.</p>
+    </section>
+
+    <section id="abstract">
+      <h2 style="text-align: center;">Abstract</h2>
+      <p>We present ZeroBot, a real2sim framework for learning a robot manipulation task from scratch in minutes under challenging conditions: zero human demonstrations, zero policy pre-training, zero known object models, and zero-shot sim2real transfer. Given only a single view of an object and a goal pose for that object, ZeroBot uses image-to-3D generative models to obtain a complete object mesh, which is used in simulation for large-scale parallel reinforcement learning. To accelerate training, we introduce an action space which leverages the generated geometry and learned value function to sample states involving robot-object contact. When evaluated on real-world tasks including grasping, pushing, and multi-stage manipulation, ZeroBot achieves an 88% success rate with an average training time of 117 seconds.</p>
+    </section>
+
+    <section id="framework">
+      <h2 style="text-align: center;">Framework Overview</h2>
+      <img src="assets/pipeline.png" alt="Framework diagram" class="figure">
+      <p>Our ZeroBot framework has three main stages. First, the robot observes an object from a single view. It generates an object mesh from the RGB image using an image-to-3D model, and aligns it with the depth image to recover scale. Second, the generated mesh is used for simulation. The task is specified by providing a goal pose, which defines a dense reward function. Massively parallel RL is used to learn a policy which can manipulate the object into that goal pose. To enable rapid training, we use a contact action space which selects a high-value contact state using the learned value function. During deployment, the robot moves into this state using motion planning and executes policy actions.</p>
+    </section>
+
+    <section id="contact">
+      <h2 style="text-align: center;">Action Space</h2>
+      <img src="assets/contact.png" alt="Action space figure" class="figure">
+      <p>An overview of our contact action space on a multi-stage nudge-and-grasp task. (1) First we uniformly sample contact locations from the surface of the generated mesh (a subset of contacts is shown here for visual clarity). Each point shows a sampled gripper pose for nudging (top row) or grasping (bottom row). (2) Then invalid contact states are eliminated, e.g. those colliding with the rest of the object, and the learned value function from RL is used to compute the value of each valid state. <strong style="color:#440154;">Purple</strong> states have lower value, and <strong style="color:#c2a127;">yellow</strong> states have higher value. (3) At execution, the max-value state is chosen. (4) The robot moves into contact using motion planning, and then (5) executes policy actions. Meshes shown have been approximated for fast collision checking.</p>
+    </section>
+
+    <section id="generated-meshes">
+      <h2 style="text-align: center;">Examples of Generated Meshes</h2>
+      <img src="assets/real2mesh.png" alt="Examples of generated meshes" class="figure" style="max-width: 70%;">
+      <p>Examples of meshes given by real2sim methods. ZeroBot uses an image-to-3D model which can generate a custom mesh to best explain the input image, even for an object which it has never seen before. Although the robot cannot directly observe the far side of the bowl or the whole tumbler handle, it can still learn to manipulate it in simulation and successfully transfer this zero-shot to the real world, using the powerful visual prior of image-to-3D models to generate complete meshes from partial observations. We also find that for non-prehensile tasks such as rolling a Coca-Cola can onto a ramp, generating smooth and complete geometry is crucial for task success.</p>
+
+      <p>The meshes below are interactive: you can click and drag to rotate them, and scroll to zoom in.</p>
+      <div class="viewer-grid">
+        <model-viewer src="assets/meshes/bottle.glb" alt="Bottle mesh" auto-rotate camera-controls interaction-prompt="auto" camera-orbit="45deg 75deg auto" rotation-per-second="0deg" shadow-intensity="0"></model-viewer>
+        <model-viewer src="assets/meshes/bowl.glb" alt="Bowl mesh" auto-rotate camera-controls interaction-prompt="auto" camera-orbit="0deg 140deg auto" rotation-per-second="0deg" shadow-intensity="0"></model-viewer>
+        <model-viewer src="assets/meshes/tumbler.glb" alt="Tumbler mesh" auto-rotate camera-controls interaction-prompt="auto" camera-orbit="45deg 140deg auto" rotation-per-second="0deg" shadow-intensity="0"></model-viewer>
+      </div>
+    </section>
+  </div>
+
+  <section id="videos">
+    <h2>Robot Videos</h2>
+    <p>Videos of our method executing six tasks on a real robot (5× speed).<br/>
+      ZeroBot learns these tasks from scratch in minutes, showing that our real2sim framework enables rapid, autonomous robot learning.</p>
+    <div class="video-grid">
+      <video src="assets/videos/book.mp4" autoplay loop muted playsinline></video>
+      <video src="assets/videos/shelf.mp4" autoplay loop muted playsinline></video>
+      <video src="assets/videos/novelposes.mp4" autoplay loop muted playsinline></video>
+      <video src="assets/videos/bowl.mp4" autoplay loop muted playsinline></video>
+      <video src="assets/videos/ramp.mp4" autoplay loop muted playsinline></video>
+      <video src="assets/videos/tumbler.mp4" autoplay loop muted playsinline></video>
+    </div>
+  </section>
 </body>
 </html>
